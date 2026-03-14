@@ -13,20 +13,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 type FormState = {
   name: string;
+  email: string;
   role: string;
   hospital_id: string;
 };
 
+const STAFF_ROLES = ["staff"] as const;
+
 const initialForm: FormState = {
   name: "",
-  role: "",
+  email: "",
+  role: "staff",
   hospital_id: "",
 };
 
 function normalizePayload(form: FormState): StaffInsert {
   return {
     name: form.name.trim() || null,
-    role: form.role.trim() || null,
+    email: form.email.trim() || null,
+    role: form.role.trim() || "staff",
     hospital_id: form.hospital_id || null,
   };
 }
@@ -69,8 +74,36 @@ function StaffModal({
           </div>
 
           <div>
+            <Label htmlFor="staff_email">Email</Label>
+            <Input
+              id="staff_email"
+              type="email"
+              value={form.email}
+              onChange={(e) => onChange("email", e.target.value)}
+              placeholder="staff@example.com"
+              disabled={!!editing}
+            />
+            {editing ? (
+              <p className="mt-1 text-xs text-muted-foreground">Email cannot be changed when editing.</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">A random password will be generated and sent to this email.</p>
+            )}
+          </div>
+
+          <div>
             <Label htmlFor="staff_role">Role</Label>
-            <Input id="staff_role" value={form.role} onChange={(e) => onChange("role", e.target.value)} placeholder="Nurse" />
+            <Select value={form.role || "staff"} onValueChange={(value) => onChange("role", value)}>
+              <SelectTrigger id="staff_role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {STAFF_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -158,7 +191,8 @@ export function StaffManagement() {
     setEditingId(row.id);
     setForm({
       name: row.name ?? "",
-      role: row.role ?? "",
+      email: row.email ?? "",
+      role: row.role ?? "staff",
       hospital_id: row.hospital_id ?? "",
     });
     setOpen(true);
@@ -211,6 +245,7 @@ export function StaffManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Hospital</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -219,13 +254,13 @@ export function StaffManagement() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     Loading staff...
                   </TableCell>
                 </TableRow>
               ) : staff.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     No staff found.
                   </TableCell>
                 </TableRow>
@@ -233,6 +268,7 @@ export function StaffManagement() {
                 staff.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{row.name ?? "-"}</TableCell>
+                    <TableCell>{row.email ?? "-"}</TableCell>
                     <TableCell>{row.role ?? "-"}</TableCell>
                     <TableCell>{row.hospital_id ? hospitalMap.get(row.hospital_id) ?? "Unknown" : "Unassigned"}</TableCell>
                     <TableCell className="text-right">

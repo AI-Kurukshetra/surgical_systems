@@ -50,16 +50,29 @@ export async function POST(req: Request) {
   if (!raw || typeof raw !== "object") return errorResponse("Invalid request body", 400);
 
   const payload = sanitizePayload(raw as Record<string, unknown>);
-  if (!payload.name) return errorResponse("name is required", 400);
+  if (!payload.name || String(payload.name).trim() === "") return errorResponse("name is required", 400);
   if (payload.status && !isValidStatus(payload.status)) return errorResponse("Invalid status value", 400);
 
-  const insertPayload: EquipmentPayload = {
-    ...payload,
+  const insertPayload: Record<string, unknown> = {
+    name: payload.name.trim(),
+    hospital_id: payload.hospital_id ?? null,
     status: payload.status ?? "available",
   };
 
   const { data, error } = await supabase.from("equipment").insert(insertPayload).select("*").single();
-  if (error) return errorResponse(error.message, 400);
+  if (error) {
+    let msg = error.message || "Insert failed";
+    const hint =
+      "Run the Supabase migration 20260314220000_equipment_api_columns.sql if you see column or constraint errors.";
+    if (
+      msg.includes("does not exist") ||
+      msg.includes("violates not-null") ||
+      msg.includes("null value in column")
+    ) {
+      msg = `${msg} ${hint}`;
+    }
+    return errorResponse(msg, 400);
+  }
 
   return successResponse(data, 201);
 }

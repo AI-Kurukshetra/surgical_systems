@@ -54,10 +54,11 @@ export async function requestApi<T>(path: string, init?: RequestInit): Promise<S
         apiCode: envelope.code,
       });
 
+      const displayMessage = apiMessage && String(apiMessage).trim() ? apiMessage : toFriendlyMessage(response.status);
       return {
         data: null,
         error: {
-          message: toFriendlyMessage(response.status),
+          message: displayMessage,
           code: envelope.code ?? String(response.status),
           details: apiMessage,
         },
@@ -92,7 +93,10 @@ export async function requestApi<T>(path: string, init?: RequestInit): Promise<S
 }
 
 export async function listResource<T>(basePath: string): Promise<ServiceResponse<T[]>> {
-  return requestApi<T[]>(basePath, { method: "GET" });
+  const result = await requestApi<T[]>(basePath, { method: "GET" });
+  if (result.error) return result;
+  const list = Array.isArray(result.data) ? result.data : [];
+  return { data: list, error: null };
 }
 
 export async function getResourceByIdFromList<T extends { id: string }>(basePath: string, id: string): Promise<ServiceResponse<T>> {

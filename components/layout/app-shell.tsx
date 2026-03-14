@@ -19,12 +19,12 @@ const primaryLinks = [
   { href: "/staff", label: "Staff", icon: Users },
   { href: "/equipment", label: "Equipment", icon: Wrench },
   { href: "/analytics", label: "Analytics", icon: ChartColumnBig },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 const adminLinks = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/hospitals", label: "Hospitals", icon: Building2 },
+  { href: "/settings", label: "Operation room", icon: Settings },
 ];
 
 const links = [...primaryLinks, ...adminLinks];

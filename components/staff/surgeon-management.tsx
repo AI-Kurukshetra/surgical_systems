@@ -7,13 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+const SURGEON_ROLES = ["surgeon"] as const;
 
 type FormState = {
   name: string;
   specialization: string;
   email: string;
   phone: string;
+  role: string;
 };
 
 const initialForm: FormState = {
@@ -21,6 +25,7 @@ const initialForm: FormState = {
   specialization: "",
   email: "",
   phone: "",
+  role: "surgeon",
 };
 
 function normalizePayload(form: FormState): SurgeonInsert {
@@ -84,7 +89,30 @@ function SurgeonModal({
               type="email"
               value={form.email}
               onChange={(e) => onChange("email", e.target.value)}
+              placeholder="surgeon@example.com"
+              disabled={!!editing}
             />
+            {editing ? (
+              <p className="mt-1 text-xs text-muted-foreground">Email cannot be changed when editing.</p>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">A random password will be generated and sent to this email.</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="surgeon_role">Role</Label>
+            <Select value={form.role || "surgeon"} onValueChange={(value) => onChange("role", value)}>
+              <SelectTrigger id="surgeon_role">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {SURGEON_ROLES.map((role) => (
+                  <SelectItem key={role} value={role}>
+                    {role.charAt(0).toUpperCase() + role.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -150,6 +178,7 @@ export function SurgeonManagement() {
       specialization: row.specialization ?? "",
       email: row.email ?? "",
       phone: row.phone ?? "",
+      role: "surgeon",
     });
     setOpen(true);
   };
@@ -203,6 +232,7 @@ export function SurgeonManagement() {
                 <TableHead>Name</TableHead>
                 <TableHead>Specialization</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -210,13 +240,13 @@ export function SurgeonManagement() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     Loading surgeons...
                   </TableCell>
                 </TableRow>
               ) : surgeons.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No surgeons found.
                   </TableCell>
                 </TableRow>
@@ -226,6 +256,7 @@ export function SurgeonManagement() {
                     <TableCell>{row.name ?? "-"}</TableCell>
                     <TableCell>{row.specialization ?? "-"}</TableCell>
                     <TableCell>{row.email ?? "-"}</TableCell>
+                    <TableCell>Surgeon</TableCell>
                     <TableCell>{row.phone ?? "-"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" onClick={() => openEdit(row)}>

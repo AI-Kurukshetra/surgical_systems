@@ -39,7 +39,8 @@ export async function GET() {
   const { data, error } = await supabase.from("case_requests").select("*").order("requested_date", { ascending: false });
   if (error) return errorResponse(error.message, 400);
 
-  return successResponse(data ?? []);
+  const list = Array.isArray(data) ? data : [];
+  return successResponse(list);
 }
 
 export async function POST(req: Request) {
@@ -105,7 +106,14 @@ export async function PUT(req: Request) {
     return errorResponse("Invalid status value", 400);
   }
 
-  const { data, error } = await supabase.from("case_requests").update(payload).eq("id", requestId).select("*").single();
+  const updatePayload: Partial<CaseRequestPayload> = {};
+  if (payload.status !== undefined) updatePayload.status = payload.status;
+  if (payload.surgeon_id !== undefined && payload.surgeon_id !== null) updatePayload.surgeon_id = payload.surgeon_id;
+  if (payload.patient_id !== undefined && payload.patient_id !== null) updatePayload.patient_id = payload.patient_id;
+  if (payload.procedure_name !== undefined && payload.procedure_name !== null) updatePayload.procedure_name = payload.procedure_name;
+  if (payload.requested_date !== undefined && payload.requested_date !== null) updatePayload.requested_date = payload.requested_date;
+
+  const { data, error } = await supabase.from("case_requests").update(updatePayload).eq("id", requestId).select("*").single();
   if (error) return errorResponse(error.message, 400);
 
   return successResponse(data);

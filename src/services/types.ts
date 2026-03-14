@@ -90,6 +90,7 @@ export interface Staff {
   hospital_id: string | null;
   name: string | null;
   role: string | null;
+  email: string | null;
   created_at: string;
 }
 

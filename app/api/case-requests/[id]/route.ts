@@ -36,7 +36,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return successResponse(data);
   }
 
-  const { data, error } = await supabase.from("case_requests").update(payload).eq("id", params.id).select("*").single();
+  const allowedKeys = ["status", "surgeon_id", "patient_id", "procedure_name", "requested_date"] as const;
+  const updatePayload: Record<string, unknown> = {};
+  for (const key of allowedKeys) {
+    const value = (payload as Record<string, unknown>)[key];
+    if (value !== undefined && value !== null) updatePayload[key] = value;
+  }
+
+  const { data, error } = await supabase.from("case_requests").update(updatePayload).eq("id", params.id).select("*").single();
   if (error) return errorResponse(error.message, 400);
   return successResponse(data);
 }

@@ -17,8 +17,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   if (!user) return errorResponse("Unauthorized", 401);
   if (!roleGuard(role, ["admin", "scheduler"])) return errorResponse("Forbidden", 403);
 
-  const payload = await req.json().catch(() => null);
-  if (!payload || typeof payload !== "object") return errorResponse("Invalid request body", 400);
+  const raw = await req.json().catch(() => null);
+  if (!raw || typeof raw !== "object") return errorResponse("Invalid request body", 400);
+  const { id: _id, created_at: _created_at, ...payload } = raw as Record<string, unknown>;
 
   const { data, error } = await supabase.from("staff").update(payload).eq("id", params.id).select("*").single();
   if (error) return errorResponse(error.message, 400);

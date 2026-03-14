@@ -31,10 +31,12 @@ function normalizeErrorMessage(message: string, status: number) {
 }
 
 export function errorResponse(message: string, status = 400, options?: { code?: string }) {
+  const normalized = normalizeErrorMessage(message, status);
   return NextResponse.json<ApiResponse>(
     {
       success: false,
-      message: normalizeErrorMessage(message, status),
+      message: normalized,
+      error: normalized,
       ...(options?.code ? { code: options.code } : {}),
     },
     { status },

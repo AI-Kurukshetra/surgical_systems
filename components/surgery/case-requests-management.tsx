@@ -250,7 +250,19 @@ export function CaseRequestsManagement() {
     }
 
     if (result.data) {
-      setRequests((prev) => prev.map((item) => (item.id === requestId ? (result.data as CaseRequest) : item)));
+      const updated = result.data as CaseRequest;
+      setRequests((prev) =>
+        prev.map((item) =>
+          item.id === requestId
+            ? {
+                ...item,
+                ...updated,
+                patient_id: updated.patient_id ?? item.patient_id,
+                surgeon_id: updated.surgeon_id ?? item.surgeon_id,
+              }
+            : item,
+        ),
+      );
 
       if (status === "approved") {
         const approvedRequest = result.data as CaseRequest;
@@ -260,6 +272,8 @@ export function CaseRequestsManagement() {
           is_read: false,
         });
       }
+
+      void loadData();
     }
 
     setSavingDecisionId(null);
