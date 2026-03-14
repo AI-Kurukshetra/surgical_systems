@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
   const { data: surgeon, error: insertError } = await supabaseAdmin
     .from("surgeons")
-    .insert(surgeonRow)
+    .insert(surgeonRow as never)
     .select("*")
     .single();
 

@@ -19,6 +19,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
   const raw = await req.json().catch(() => null);
   if (!raw || typeof raw !== "object") return errorResponse("Invalid request body", 400);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- id and created_at intentionally omitted from payload
   const { id: _id, created_at: _created_at, ...payload } = raw as Record<string, unknown>;
 
   const { data, error } = await supabase.from("staff").update(payload).eq("id", params.id).select("*").single();

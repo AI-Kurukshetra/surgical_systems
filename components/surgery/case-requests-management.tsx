@@ -286,11 +286,18 @@ export function CaseRequestsManagement() {
       return;
     }
 
+    const approvedRequest = requests.find((r) => r.id === createSurgeryForRequestId);
+    if (!approvedRequest) {
+      setError("Case request not found.");
+      return;
+    }
+
     setSavingSurgery(true);
     setError(null);
 
     const payload = {
       case_request_id: createSurgeryForRequestId,
+      patient_id: approvedRequest.patient_id ?? null,
       operating_room_id: surgeryForm.operating_room_id || null,
       scheduled_start: new Date(surgeryForm.scheduled_start).toISOString(),
       scheduled_end: new Date(surgeryForm.scheduled_end).toISOString(),

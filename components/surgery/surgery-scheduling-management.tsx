@@ -6,6 +6,7 @@ import { equipmentService } from "@/src/services/equipment";
 import { equipmentAssignmentsService } from "@/src/services/equipment_assignments";
 import { notificationsService } from "@/src/services/notifications";
 import { operatingRoomsService } from "@/src/services/operating_rooms";
+import { patientsService } from "@/src/services/patients";
 import { staffService } from "@/src/services/staff";
 import { staffAssignmentsService } from "@/src/services/staff_assignments";
 import { surgeriesService } from "@/src/services/surgeries";
@@ -13,6 +14,7 @@ import type {
   Equipment,
   EquipmentAssignment,
   OperatingRoom,
+  Patient,
   Staff,
   StaffAssignment,
   Surgery,
@@ -27,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type SurgeryFormState = {
+  patient_id: string;
   operating_room_id: string;
   scheduled_start: string;
   scheduled_end: string;
@@ -34,6 +37,7 @@ type SurgeryFormState = {
 };
 
 const initialForm: SurgeryFormState = {
+  patient_id: "",
   operating_room_id: "",
   scheduled_start: "",
   scheduled_end: "",
@@ -54,6 +58,7 @@ function toggleId(list: string[], id: string) {
 
 export function SurgerySchedulingManagement() {
   const [surgeries, setSurgeries] = useState<Surgery[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [rooms, setRooms] = useState<OperatingRoom[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -69,6 +74,16 @@ export function SurgerySchedulingManagement() {
   const [error, setError] = useState<string | null>(null);
 
   const roomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.room_name ?? "Unknown"])), [rooms]);
+  const patientMap = useMemo(
+    () =>
+      new Map(
+        patients.map((p) => [
+          p.id,
+          [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || "Unknown",
+        ])
+      ),
+    [patients]
+  );
   const staffMap = useMemo(() => new Map(staff.map((s) => [s.id, s.name ?? "Unknown"])), [staff]);
   const equipmentMap = useMemo(() => new Map(equipment.map((e) => [e.id, e.name ?? "Unknown"])), [equipment]);
 
@@ -96,6 +111,7 @@ export function SurgerySchedulingManagement() {
 
     const [
       surgeriesRes,
+      patientsRes,
       roomsRes,
       staffRes,
       equipmentRes,
@@ -103,6 +119,7 @@ export function SurgerySchedulingManagement() {
       equipmentAssignmentsRes,
     ] = await Promise.all([
       surgeriesService.getAll(),
+      patientsService.getAll(),
       operatingRoomsService.getAll(),
       staffService.getAll(),
       equipmentService.getAll(),
@@ -112,6 +129,7 @@ export function SurgerySchedulingManagement() {
 
     if (
       surgeriesRes.error ||
+      patientsRes.error ||
       roomsRes.error ||
       staffRes.error ||
       equipmentRes.error ||
@@ -120,6 +138,7 @@ export function SurgerySchedulingManagement() {
     ) {
       setError(
         surgeriesRes.error?.message ||
+          patientsRes.error?.message ||
           roomsRes.error?.message ||
           staffRes.error?.message ||
           equipmentRes.error?.message ||
@@ -132,6 +151,7 @@ export function SurgerySchedulingManagement() {
     }
 
     setSurgeries(surgeriesRes.data ?? []);
+    setPatients(patientsRes.data ?? []);
     setRooms(roomsRes.data ?? []);
     setStaff(staffRes.data ?? []);
     setEquipment(equipmentRes.data ?? []);
@@ -161,13 +181,18 @@ export function SurgerySchedulingManagement() {
     setSaving(true);
     setError(null);
 
-    const createResult = await surgeriesService.create({
+    const createPayload = {
       case_request_id: null,
+      patient_id: form.patient_id || null,
       operating_room_id: form.operating_room_id || null,
       scheduled_start: new Date(form.scheduled_start).toISOString(),
       scheduled_end: new Date(form.scheduled_end).toISOString(),
       status: form.status,
-    });
+      staff_ids: selectedStaffIds,
+      equipment_ids: selectedEquipmentIds,
+    };
+
+    const createResult = await surgeriesService.create(createPayload);
 
     if (createResult.error || !createResult.data) {
       setError(createResult.error?.message ?? "Failed to create surgery.");
@@ -177,36 +202,13 @@ export function SurgerySchedulingManagement() {
 
     const createdSurgery = createResult.data as Surgery;
 
-    const staffTasks = selectedStaffIds.map((staffId) =>
-      staffAssignmentsService.create({ surgery_id: createdSurgery.id, staff_id: staffId }),
-    );
-
-    const equipmentTasks = selectedEquipmentIds.map((equipmentId) =>
-      equipmentAssignmentsService.create({ surgery_id: createdSurgery.id, equipment_id: equipmentId }),
-    );
-
-    const [staffResults, equipmentResults] = await Promise.all([
-      Promise.all(staffTasks),
-      Promise.all(equipmentTasks),
-    ]);
-
-    const failedStaff = staffResults.find((res) => res.error);
-    const failedEquipment = equipmentResults.find((res) => res.error);
-
-    if (failedStaff?.error || failedEquipment?.error) {
-      setError(failedStaff?.error?.message ?? failedEquipment?.error?.message ?? "Failed to assign resources.");
-      setSaving(false);
-      return;
-    }
-
-    setSurgeries((prev) => [...prev, createdSurgery]);
-    setStaffAssignments((prev) => [...prev, ...staffResults.map((res) => res.data).filter(Boolean) as StaffAssignment[]]);
-    setEquipmentAssignments((prev) => [...prev, ...equipmentResults.map((res) => res.data).filter(Boolean) as EquipmentAssignment[]]);
-
     setForm(initialForm);
     setSelectedStaffIds([]);
     setSelectedEquipmentIds([]);
+    setError(null);
     setSaving(false);
+
+    await loadData();
 
     await notificationsService.create({
       user_id: null,
@@ -248,6 +250,26 @@ export function SurgerySchedulingManagement() {
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="patient">Patient</Label>
+              <Select
+                value={form.patient_id || "none"}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, patient_id: value === "none" ? "" : value }))}
+              >
+                <SelectTrigger id="patient">
+                  <SelectValue placeholder="Select patient" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No patient</SelectItem>
+                  {patients.map((patient) => (
+                    <SelectItem key={patient.id} value={patient.id}>
+                      {[patient.first_name, patient.last_name].filter(Boolean).join(" ").trim() || "Unknown"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label htmlFor="operating_room">Operating Room</Label>
               <Select
@@ -367,6 +389,7 @@ export function SurgerySchedulingManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Patient</TableHead>
                   <TableHead>Operating Room</TableHead>
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
@@ -378,13 +401,13 @@ export function SurgerySchedulingManagement() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       Loading surgeries...
                     </TableCell>
                   </TableRow>
                 ) : surgeries.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       No surgeries scheduled yet.
                     </TableCell>
                   </TableRow>
@@ -395,6 +418,7 @@ export function SurgerySchedulingManagement() {
 
                     return (
                       <TableRow key={surgery.id}>
+                        <TableCell>{surgery.patient_id ? patientMap.get(surgery.patient_id) ?? "Unknown" : "-"}</TableCell>
                         <TableCell>{surgery.operating_room_id ? roomMap.get(surgery.operating_room_id) ?? "Unknown" : "Unassigned"}</TableCell>
                         <TableCell>{surgery.scheduled_start ? new Date(surgery.scheduled_start).toLocaleString() : "-"}</TableCell>
                         <TableCell>{surgery.scheduled_end ? new Date(surgery.scheduled_end).toLocaleString() : "-"}</TableCell>

@@ -62,6 +62,7 @@ export type SurgeonUpdate = Partial<SurgeonInsert>;
 export interface Surgery {
   id: string;
   case_request_id: string | null;
+  patient_id: string | null;
   operating_room_id: string | null;
   scheduled_start: string | null;
   scheduled_end: string | null;

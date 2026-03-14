@@ -38,6 +38,7 @@ export function EquipmentManagement() {
   const [error, setError] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [form, setForm] = useState<FormState>(initialForm);
   const [selectedSurgeryByEquipment, setSelectedSurgeryByEquipment] = useState<Record<string, string>>({});
 
@@ -112,8 +113,53 @@ export function EquipmentManagement() {
       setEquipment((prev) => [result.data as Equipment, ...prev]);
     }
 
-    setForm(initialForm);
+    closeModal();
+    setSaving(false);
+  };
+
+  const openEditModal = (item: Equipment) => {
+    setEditingEquipment(item);
+    setForm({
+      name: item.name ?? "",
+      hospital_id: item.hospital_id ?? "",
+      status: (item.status ?? "available") as EquipmentStatus,
+    });
+    setAddOpen(true);
+  };
+
+  const closeModal = () => {
     setAddOpen(false);
+    setEditingEquipment(null);
+    setForm(initialForm);
+  };
+
+  const onEditEquipment = async () => {
+    if (!editingEquipment) return;
+    if (!form.name.trim()) {
+      setError("Equipment name is required.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    const result = await equipmentService.update(editingEquipment.id, {
+      hospital_id: form.hospital_id || null,
+      name: form.name.trim(),
+      status: form.status,
+    });
+
+    if (result.error) {
+      setError(result.error.message);
+      setSaving(false);
+      return;
+    }
+
+    if (result.data) {
+      setEquipment((prev) => prev.map((item) => (item.id === editingEquipment.id ? (result.data as Equipment) : item)));
+    }
+
+    closeModal();
     setSaving(false);
   };
 
@@ -170,7 +216,7 @@ export function EquipmentManagement() {
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>Equipment Management</CardTitle>
-          <Button onClick={() => setAddOpen(true)}>Add Equipment</Button>
+          <Button onClick={() => { setEditingEquipment(null); setForm(initialForm); setAddOpen(true); }}>Add Equipment</Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -185,18 +231,19 @@ export function EquipmentManagement() {
                 <TableHead>Status</TableHead>
                 <TableHead>Assigned Surgeries</TableHead>
                 <TableHead>Assign To Surgery</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {              loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     Loading equipment...
                   </TableCell>
                 </TableRow>
               ) : equipment.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No equipment found.
                   </TableCell>
                 </TableRow>
@@ -251,6 +298,11 @@ export function EquipmentManagement() {
                           </Button>
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <Button variant="outline" size="sm" onClick={() => openEditModal(item)}>
+                          Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -264,8 +316,8 @@ export function EquipmentManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <div className="w-full max-w-lg rounded-xl border bg-white shadow-xl">
             <div className="flex items-center justify-between border-b px-6 py-4">
-              <h2 className="text-lg font-semibold">Add Equipment</h2>
-              <Button variant="ghost" onClick={() => !saving && setAddOpen(false)}>
+              <h2 className="text-lg font-semibold">{editingEquipment ? "Edit Equipment" : "Add Equipment"}</h2>
+              <Button variant="ghost" onClick={() => !saving && closeModal()}>
                 Close
               </Button>
             </div>
@@ -315,12 +367,18 @@ export function EquipmentManagement() {
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t px-6 py-4">
-              <Button variant="outline" onClick={() => !saving && setAddOpen(false)} disabled={saving}>
+              <Button variant="outline" onClick={() => !saving && closeModal()} disabled={saving}>
                 Cancel
               </Button>
-              <Button onClick={() => void onAddEquipment()} disabled={saving}>
-                {saving ? "Saving..." : "Add Equipment"}
-              </Button>
+              {editingEquipment ? (
+                <Button onClick={() => void onEditEquipment()} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              ) : (
+                <Button onClick={() => void onAddEquipment()} disabled={saving}>
+                  {saving ? "Saving..." : "Add Equipment"}
+                </Button>
+              )}
             </div>
           </div>
         </div>

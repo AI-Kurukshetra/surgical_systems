@@ -23,7 +23,7 @@ export default async function AdminHospitalsPage() {
               <CardTitle>Access Restricted</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">You don't have permission to view this resource.</p>
+              <p className="text-sm text-muted-foreground">You don&apos;t have permission to view this resource.</p>
             </CardContent>
           </Card>
         )}
