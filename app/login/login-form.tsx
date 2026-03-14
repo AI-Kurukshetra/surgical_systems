@@ -32,15 +32,14 @@ function getSessionRole(user: {
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const nextPath = getSafeNextPath(searchParams.get("next"));
+  const [isSignUp, setIsSignUp] = useState(searchParams.get("signup") === "true");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const nextPath = getSafeNextPath(searchParams.get("next"));
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
