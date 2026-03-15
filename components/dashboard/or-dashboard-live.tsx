@@ -78,7 +78,9 @@ export function ORDashboardLive() {
       }
 
       const caseRequest = currentSurgery.case_request_id ? requestsMap.get(currentSurgery.case_request_id) : null;
-      const surgeon = caseRequest?.surgeon_id ? surgeonsMap.get(caseRequest.surgeon_id) : null;
+      // Prefer surgeon assigned on the surgery (scheduling), then fall back to case request's surgeon
+      const surgeonId = currentSurgery.surgeon_id ?? caseRequest?.surgeon_id ?? null;
+      const surgeon = surgeonId ? surgeonsMap.get(surgeonId) : null;
 
       return {
         room_name: room.room_name ?? room.id,

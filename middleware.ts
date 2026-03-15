@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
+  const isResetPassword = pathname.startsWith("/reset-password");
 
   if (!user && isProtectedRoute) {
     const redirectUrl = request.nextUrl.clone();
@@ -56,7 +57,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && isAuthRoute) {
+  if (user && isAuthRoute && !isResetPassword) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/dashboard";
     redirectUrl.searchParams.delete("next");

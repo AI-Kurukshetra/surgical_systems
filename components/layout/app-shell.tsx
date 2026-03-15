@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Activity, Building2, CalendarClock, ChartColumnBig, Settings, Stethoscope, Users, Wrench } from "lucide-react";
 import { NotificationDropdown } from "@/components/layout/notification-dropdown";
@@ -27,12 +28,41 @@ const adminLinks = [
   { href: "/settings", label: "Operation room", icon: Settings },
 ];
 
-const links = [...primaryLinks, ...adminLinks];
+function normalizeRole(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  return normalized || null;
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const current = links.find((link) => pathname.startsWith(link.href));
+  const [role, setRole] = useState<string | null>(null);
+
+  const visibleLinks = role === "admin" ? [...primaryLinks, ...adminLinks] : primaryLinks;
+  const current = visibleLinks.find((link) => pathname.startsWith(link.href));
+
+  useEffect(() => {
+    const resolveRole = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setRole(null);
+        return;
+      }
+      const metaRole =
+        normalizeRole(user.user_metadata?.role) ?? normalizeRole(user.app_metadata?.role);
+      if (metaRole) {
+        setRole(metaRole);
+        return;
+      }
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+      setRole(normalizeRole((profile as { role?: unknown } | null)?.role) ?? null);
+    };
+    void resolveRole();
+  }, []);
 
   const handleLogout = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -67,25 +97,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               })}
             </div>
 
-            <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin</p>
-              {adminLinks.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "flex items-center gap-2 rounded-md px-3 py-2 pl-5 text-sm",
-                      pathname === link.href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </div>
+            {role === "admin" ? (
+              <div className="space-y-1">
+                <p className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin</p>
+                {adminLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-2 pl-5 text-sm",
+                        pathname === link.href ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
           </nav>
         </aside>
 

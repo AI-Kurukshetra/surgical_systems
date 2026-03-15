@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatStatus } from "@/lib/utils";
 
 const statuses: EquipmentStatus[] = ["available", "in_use", "maintenance"];
 
@@ -264,7 +265,7 @@ export function EquipmentManagement() {
                           <SelectContent>
                             {statuses.map((status) => (
                               <SelectItem key={status} value={status}>
-                                {status}
+                                {formatStatus(status)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -357,11 +358,11 @@ export function EquipmentManagement() {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
+{statuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {formatStatus(status)}
+                    </SelectItem>
+                  ))}
                   </SelectContent>
                 </Select>
               </div>

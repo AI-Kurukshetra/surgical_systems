@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function getSafeNextPath(nextPath: string | null): string {
   if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
@@ -29,17 +30,42 @@ function getSessionRole(user: {
   return null;
 }
 
-export function LoginForm() {
+type LoginFormProps = { resetSuccess?: boolean; errorMessage?: string | null };
+
+export function LoginForm({ resetSuccess, errorMessage }: LoginFormProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = getSafeNextPath(searchParams.get("next"));
   const [isSignUp, setIsSignUp] = useState(searchParams.get("signup") === "true");
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(errorMessage ?? null);
+  const [info, setInfo] = useState<string | null>(resetSuccess ? "Password updated. You can sign in with your new password." : null);
   const [loading, setLoading] = useState(false);
+
+  const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    const supabase = getSupabaseBrowserClient();
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent("/reset-password")}`,
+      });
+      if (resetError) {
+        setError(resetError.message);
+        return;
+      }
+      setInfo("Check your email for a link to reset your password. The link will expire in 1 hour.");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -120,51 +146,103 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>{isSignUp ? "Create account" : "Welcome back"}</CardTitle>
+          <CardTitle>
+            {isForgotPassword ? "Reset password" : isSignUp ? "Create account" : "Welcome back"}
+          </CardTitle>
           <CardDescription>
-            {isSignUp ? "Register to access SmartOR" : "Sign in to your SmartOR workspace"}
+            {isForgotPassword
+              ? "Enter your email and we’ll send you a link to reset your password."
+              : isSignUp
+                ? "Register to access SmartOR"
+                : "Sign in to your SmartOR workspace"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {isSignUp ? (
+          {isForgotPassword ? (
+            <form className="space-y-4" onSubmit={handleForgotPassword}>
               <div>
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                />
               </div>
-            ) : null}
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {info ? <p className="text-sm text-emerald-600">{info}</p> : null}
+              <Button className="w-full" type="submit" disabled={loading}>
+                {loading ? "Sending…" : "Send reset link"}
+              </Button>
+              <button
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError(null);
+                  setInfo(null);
+                }}
+              >
+                Back to login
+              </button>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              {isSignUp ? (
+                <div>
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+                </div>
+              ) : null}
 
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              </div>
 
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            {info ? <p className="text-sm text-emerald-600">{info}</p> : null}
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {info ? <p className="text-sm text-emerald-600">{info}</p> : null}
 
-            <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Please wait..." : isSignUp ? "Sign up" : "Login"}
-            </Button>
+              <Button className="w-full" type="submit" disabled={loading}>
+                {loading ? "Please wait..." : isSignUp ? "Sign up" : "Login"}
+              </Button>
 
-            <button
-              className="w-full text-sm text-muted-foreground hover:text-foreground"
-              type="button"
-              onClick={() => setIsSignUp((prev) => !prev)}
-            >
-              {isSignUp ? "Already have an account? Login" : "Need an account? Sign up"}
-            </button>
-          </form>
+              <div className="flex flex-col items-center gap-1">
+                {!isSignUp ? (
+                  <button
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                      setInfo(null);
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                ) : null}
+                <button
+                  className="w-full text-sm text-muted-foreground hover:text-foreground"
+                  type="button"
+                  onClick={() => setIsSignUp((prev) => !prev)}
+                >
+                  {isSignUp ? "Already have an account? Login" : "Need an account? Sign up"}
+                </button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

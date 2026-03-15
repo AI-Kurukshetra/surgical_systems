@@ -77,7 +77,9 @@ export function LiveCommandDashboard() {
           <div className="grid gap-3 md:grid-cols-2">
             {upcoming.map((surgery) => {
               const request = surgery.case_request_id ? requestsMap.get(surgery.case_request_id) : undefined;
-              const patient = request?.patient_id ? patientsMap.get(request.patient_id) : undefined;
+              const patient =
+                (request?.patient_id ? patientsMap.get(request.patient_id) : undefined) ??
+                (surgery.patient_id ? patientsMap.get(surgery.patient_id) : undefined);
 
               return (
                 <SurgeryCard

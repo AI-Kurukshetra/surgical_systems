@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatStatus, getStatusBadgeVariant } from "@/lib/utils";
 
 export type ORDashboardRow = {
   room_name: string;
@@ -8,13 +9,6 @@ export type ORDashboardRow = {
   surgeon: string;
   status: "available" | "in_surgery" | "cleaning" | "maintenance";
   start_time: string;
-};
-
-const statusStyles: Record<ORDashboardRow["status"], "default" | "secondary" | "destructive" | "outline"> = {
-  available: "secondary",
-  in_surgery: "default",
-  cleaning: "outline",
-  maintenance: "destructive",
 };
 
 export function ORStatusBoard({ data }: { data: ORDashboardRow[] }) {
@@ -49,7 +43,7 @@ export function ORStatusBoard({ data }: { data: ORDashboardRow[] }) {
                     <TableCell>{row.surgery}</TableCell>
                     <TableCell>{row.surgeon}</TableCell>
                     <TableCell>
-                      <Badge variant={statusStyles[row.status]}>{row.status}</Badge>
+                      <Badge variant={getStatusBadgeVariant(row.status)}>{formatStatus(row.status)}</Badge>
                     </TableCell>
                     <TableCell>{row.start_time}</TableCell>
                   </TableRow>

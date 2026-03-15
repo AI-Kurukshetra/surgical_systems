@@ -5,6 +5,7 @@ import { equipmentService } from "@/src/services";
 import type { Equipment } from "@/src/services/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatStatus } from "@/lib/utils";
 
 export function EquipmentSelector() {
   const [query, setQuery] = useState("");
@@ -44,7 +45,7 @@ export function EquipmentSelector() {
           ) : (
             filtered.map((item) => (
               <div key={item.id} className="rounded-md border p-2 text-sm">
-                {item.name ?? "Unknown"} {item.status ? `(${item.status})` : ""}
+                {item.name ?? "Unknown"} {item.status ? `(${formatStatus(item.status)})` : ""}
               </div>
             ))
           )}

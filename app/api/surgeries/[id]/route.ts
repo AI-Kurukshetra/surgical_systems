@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
   const { user, role, supabase } = await getCurrentUserWithRole();
   if (!user) return errorResponse("Unauthorized", 401);
-  if (!roleGuard(role, ["admin", "staff"])) return errorResponse("Forbidden", 403);
+  if (!roleGuard(role, ["admin", "scheduler", "staff"])) return errorResponse("Forbidden", 403);
 
   const payload = await req.json().catch(() => null);
   if (!payload || typeof payload !== "object") return errorResponse("Invalid request body", 400);
@@ -34,7 +34,25 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     return successResponse(data);
   }
 
-  const { data, error } = await supabase.from("surgeries").update(payload).eq("id", params.id).select("*").single();
+  const body = payload as Record<string, unknown>;
+  const allowedKeys = [
+    "case_request_id",
+    "patient_id",
+    "surgeon_id",
+    "operating_room_id",
+    "scheduled_start",
+    "scheduled_end",
+    "status",
+  ] as const;
+  const surgeryUpdate: Record<string, unknown> = {};
+  for (const key of allowedKeys) {
+    if (!Object.prototype.hasOwnProperty.call(body, key)) continue;
+    const value = body[key];
+    if (key === "status" && !isValidStatus(value)) continue;
+    surgeryUpdate[key] = value === "" ? null : value;
+  }
+
+  const { data, error } = await supabase.from("surgeries").update(surgeryUpdate).eq("id", params.id).select("*").single();
   if (error) return errorResponse(error.message, 400);
   return successResponse(data);
 }
@@ -42,7 +60,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const { user, role, supabase } = await getCurrentUserWithRole();
   if (!user) return errorResponse("Unauthorized", 401);
-  if (!roleGuard(role, ["admin"])) return errorResponse("Forbidden", 403);
+  if (!roleGuard(role, ["admin", "scheduler"])) return errorResponse("Forbidden", 403);
 
   const { error } = await supabase.from("surgeries").delete().eq("id", params.id);
   if (error) return errorResponse(error.message, 400);

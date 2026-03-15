@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatStatus } from "@/lib/utils";
 
 type FormState = {
   hospital_id: string;
@@ -96,7 +97,7 @@ function OperatingRoomModal({
               <SelectContent>
                 {statusOptions.map((status) => (
                   <SelectItem key={status} value={status}>
-                    {status}
+                    {formatStatus(status)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -259,7 +260,7 @@ export function OperatingRoomManagement() {
                   <TableRow key={row.id}>
                     <TableCell>{row.room_name ?? "-"}</TableCell>
                     <TableCell>{row.hospital_id ? hospitalMap.get(row.hospital_id) ?? "Unknown" : "Unassigned"}</TableCell>
-                    <TableCell>{row.status ?? "-"}</TableCell>
+                    <TableCell>{row.status ? formatStatus(row.status) : "-"}</TableCell>
                     <TableCell className="space-x-2 text-right">
                       <Button variant="outline" size="sm" onClick={() => openEdit(row)}>
                         Edit

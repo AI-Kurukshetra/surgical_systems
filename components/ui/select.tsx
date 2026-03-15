@@ -33,7 +33,14 @@ export const SelectContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <SelectPrimitive.Portal>
-    <SelectPrimitive.Content ref={ref} className={cn("z-50 min-w-[8rem] rounded-md border bg-popover p-1", className)} {...props}>
+    <SelectPrimitive.Content
+    ref={ref}
+    className={cn(
+      "z-50 min-w-[8rem] rounded-md border border-input bg-white p-1 shadow-md dark:bg-zinc-900 dark:border-zinc-700",
+      className
+    )}
+    {...props}
+  >
       <SelectPrimitive.Viewport>{children}</SelectPrimitive.Viewport>
     </SelectPrimitive.Content>
   </SelectPrimitive.Portal>

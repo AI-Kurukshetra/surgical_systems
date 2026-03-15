@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "@/app/login/login-form";
 import { getSupabaseServerClient } from "@/src/lib/supabaseServer";
 
-export default async function LoginPage() {
+type Props = { searchParams: Promise<{ reset?: string; error?: string }> };
+
+export default async function LoginPage({ searchParams }: Props) {
   const supabase = getSupabaseServerClient();
   const {
     data: { user },
@@ -12,5 +14,7 @@ export default async function LoginPage() {
     redirect("/dashboard");
   }
 
-  return <LoginForm />;
+  const params = await searchParams;
+  const errorMessage = params.error ? decodeURIComponent(params.error) : null;
+  return <LoginForm resetSuccess={params.reset === "success"} errorMessage={errorMessage} />;
 }

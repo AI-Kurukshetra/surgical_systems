@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatStatus, getStatusBadgeVariant } from "@/lib/utils";
 
 export function SurgeryCard({
   title,
@@ -14,8 +15,6 @@ export function SurgeryCard({
   start: string;
   status: "scheduled" | "in_progress" | "completed" | "delayed";
 }) {
-  const variant = status === "delayed" ? "destructive" : status === "completed" ? "secondary" : "default";
-
   return (
     <Card>
       <CardContent className="flex items-start justify-between p-4">
@@ -25,7 +24,7 @@ export function SurgeryCard({
           <p className="text-sm text-muted-foreground">{room}</p>
         </div>
         <div className="text-right">
-          <Badge variant={variant}>{status}</Badge>
+          <Badge variant={getStatusBadgeVariant(status)}>{formatStatus(status)}</Badge>
           <p className="mt-2 text-xs text-muted-foreground">{start}</p>
         </div>
       </CardContent>
