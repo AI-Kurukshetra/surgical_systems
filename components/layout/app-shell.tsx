@@ -75,7 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <div className="mx-auto grid max-w-7xl gap-6 p-4 md:grid-cols-[220px_1fr] md:p-6">
-        <aside className="rounded-xl border bg-white/80 p-3 backdrop-blur">
+        <aside className="self-start rounded-xl border bg-white/80 p-3 backdrop-blur">
           <h2 className="mb-3 px-2 text-lg font-semibold">SmartOR</h2>
           <nav className="space-y-3">
             <div className="space-y-1">

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AuthConfirmClient } from "./auth-confirm-client";
 
 /**
@@ -5,5 +6,9 @@ import { AuthConfirmClient } from "./auth-confirm-client";
  * Renders client component so we can read URL hash (tokens are not sent to the server).
  */
 export default function AuthConfirmPage() {
-  return <AuthConfirmClient />;
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Confirming…</div>}>
+      <AuthConfirmClient />
+    </Suspense>
+  );
 }
